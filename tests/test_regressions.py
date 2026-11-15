@@ -6,6 +6,7 @@ import ctypes
 from ctypes import wintypes
 from dataclasses import asdict
 import json
+import io
 from pathlib import Path
 import tempfile
 import unittest
@@ -16,12 +17,30 @@ from PyQt6.QtGui import QImage, QPainter, QColor
 from PyQt6.QtWidgets import QApplication
 from core.config import AppConfig, ConfigManager, validated_config
 from core.gamepad import GamepadTracker
+from core.hotkey_manager import GlobalHotkeyManager
 from core.mouse_tracker import MouseSpeedTracker
 from core.raw_input import RAWINPUTHEADER, RAWMOUSE, RawMouseInput
 from ui.overlay_window import MotionSicknessOverlay
 from ui.settings_window import SettingsWindow
 
 APP = QApplication.instance() or QApplication([])
+
+
+class HotkeyTests(unittest.TestCase):
+    def test_hotkey_start_works_with_ascii_output_stream(self):
+        # A non-Chinese Windows redirected stream cannot encode Chinese text.
+        # Status reporting must not interrupt successful hook registration.
+        manager = GlobalHotkeyManager()
+        with io.TextIOWrapper(io.BytesIO(), encoding="ascii") as output, \
+             patch("sys.stdout", output), \
+             patch("core.hotkey_manager.keyboard.GlobalHotKeys") as listener:
+            try:
+                manager.start()
+                self.assertTrue(manager._is_running)
+                listener.return_value.start.assert_called_once()
+            finally:
+                manager.stop()
+            listener.return_value.stop.assert_called_once()
 
 
 class ConfigTests(unittest.TestCase):

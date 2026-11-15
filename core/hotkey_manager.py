@@ -4,9 +4,11 @@
 支持一键显隐覆盖层，不拦截普通按键。
 """
 
+import logging
 from typing import Callable, Optional
 from pynput import keyboard
 
+log = logging.getLogger(__name__)
 
 class GlobalHotkeyManager:
     """
@@ -31,9 +33,9 @@ class GlobalHotkeyManager:
             self._listener.daemon = True
             self._listener.start()
             self._is_running = True
-            print(f"[HotkeyManager] 全局热键已激活: {self._hotkey_str}")
-        except Exception as e:
-            print(f"[HotkeyManager] 注册全局热键失败 ({self._hotkey_str}): {e}")
+            log.info("Global hotkey activated: %s", self._hotkey_str)
+        except Exception:
+            log.exception("Global hotkey registration failed: %s", self._hotkey_str)
             self._listener = None
             self._is_running = False
 
@@ -58,5 +60,5 @@ class GlobalHotkeyManager:
         if self._on_triggered:
             try:
                 self._on_triggered()
-            except Exception as e:
-                print(f"[HotkeyManager] 触发回调执行异常: {e}")
+            except Exception:
+                log.exception("Global hotkey callback failed")

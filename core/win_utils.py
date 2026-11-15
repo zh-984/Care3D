@@ -4,8 +4,10 @@ import win32con
 import win32api
 import win32process
 import os
+import logging
 from PyQt6.QtCore import QRect
 
+log = logging.getLogger(__name__)
 
 def make_window_click_through(hwnd: int) -> bool:
     """
@@ -48,8 +50,8 @@ def make_window_click_through(hwnd: int) -> bool:
             win32con.SWP_SHOWWINDOW
         )
         return True
-    except Exception as e:
-        print(f"[win_utils] 设置穿透窗口扩展样式失败: {e}")
+    except Exception:
+        log.exception("Failed to apply click-through window styles")
         return False
 
 
@@ -68,8 +70,8 @@ def bring_window_to_topmost(hwnd: int) -> bool:
             win32con.SWP_NOACTIVATE
         )
         return True
-    except Exception as e:
-        print(f"[win_utils] 重新置顶失败: {e}")
+    except Exception:
+        log.exception("Failed to bring overlay to topmost")
         return False
 
 

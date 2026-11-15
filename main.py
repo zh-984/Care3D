@@ -126,7 +126,7 @@ def main():
 
     # 10. 退出时清理后台线程与监听
     def cleanup():
-        print("[Care3D] 正在退出，释放系统钩子与线程...")
+        logging.info("Shutting down input and timers")
         hotkey_mgr.stop()
         overlay.timer.stop()
         overlay.context_timer.stop()
