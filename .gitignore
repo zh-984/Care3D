@@ -1,0 +1,36 @@
+# Python / local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Generated packages and transient verification files
+/build/
+/dist/
+*.egg-info/
+*.spec
+!/Care3D_v2.spec
+
+# User preferences, secrets and runtime state
+/config.json
+*.log
+*.log.*
+*.lock
+*.tmp
+.env
+.env.*
+/.codex/
+/.agents/
+
+# Editor / OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
