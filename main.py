@@ -14,6 +14,8 @@ from PyQt6.QtCore import QLockFile, QTimer, pyqtSignal, QObject
 from core.config import ConfigManager
 from core.mouse_tracker import MouseSpeedTracker
 from core.hotkey_manager import GlobalHotkeyManager
+from core.preset_library import PresetLibrary
+from core.extensions import ExtensionController
 from ui.overlay_window import MotionSicknessOverlay
 from ui.settings_window import SettingsWindow
 from ui.tray_icon import TrayIconManager
@@ -22,6 +24,9 @@ from ui.tray_icon import TrayIconManager
 class AppBridge(QObject):
     """用于跨线程（如 pynput 热键回调）安全调度 Qt 主线程事件的桥接器"""
     trigger_toggle = pyqtSignal()
+    trigger_comfort = pyqtSignal()
+    hold_comfort = pyqtSignal(bool)
+    trigger_profile = pyqtSignal()
 
 
 def set_high_dpi_awareness():
@@ -77,8 +82,12 @@ def main():
     # 4. 创建全屏穿透覆盖层与控制面板
     logging.info("Creating overlay")
     overlay = MotionSicknessOverlay(config_mgr, mouse_tracker)
+    library = PresetLibrary(config_mgr)
+    extensions = ExtensionController(config_mgr, library, overlay, app)
     logging.info("Creating settings")
-    settings_win = SettingsWindow(config_mgr, mouse_tracker, overlay_ref=overlay)
+    settings_win = SettingsWindow(config_mgr, mouse_tracker, overlay_ref=overlay,
+                                  library=library, extension_controller=extensions)
+    extensions.context_changed.connect(settings_win._load_values_to_ui)
     logging.info("Settings created")
 
     # 5. 创建系统托盘
@@ -108,12 +117,17 @@ def main():
     # 8. 全局热键桥接 (pynput 运行在子线程，通过 Qt Signal 调度到主线程执行)
     bridge = AppBridge()
     bridge.trigger_toggle.connect(toggle_overlay)
+    bridge.trigger_comfort.connect(overlay.toggle_comfort)
+    bridge.hold_comfort.connect(overlay.set_comfort_active)
+    bridge.trigger_profile.connect(extensions.cycle_profile)
+    extensions.request_toggle.connect(toggle_overlay)
 
     hotkey_mgr = GlobalHotkeyManager(
         hotkey_str=config_mgr.config.hotkey_toggle,
         on_triggered=bridge.trigger_toggle.emit
     )
-    hotkey_mgr.start()
+    extensions.attach_hotkeys(hotkey_mgr, bridge)
+    extensions.notification.connect(lambda message: tray_mgr.tray.showMessage("Care3D", message))
 
     # 9. 信号与槽关联
     settings_win.request_toggle_overlay.connect(toggle_overlay)
@@ -128,6 +142,7 @@ def main():
     def cleanup():
         logging.info("Shutting down input and timers")
         hotkey_mgr.stop()
+        extensions.stop()
         overlay.timer.stop()
         overlay.context_timer.stop()
         settings_win.save_timer.stop()

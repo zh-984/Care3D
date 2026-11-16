@@ -7,11 +7,12 @@
 """
 
 import sys
+import re
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSlider, QCheckBox,
     QPushButton, QColorDialog, QComboBox, QTabWidget,
     QProgressBar, QScrollArea, QFrame, QMessageBox, QApplication,
-    QStyle, QStyleOptionButton
+    QStyle, QStyleOptionButton, QInputDialog
 )
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from core.win_utils import list_target_windows
@@ -19,6 +20,7 @@ from PyQt6.QtGui import QColor, QPainter, QPainterPath, QPen
 
 from core.config import ConfigManager, PROFILE_NAMES
 from core.mouse_tracker import MouseSpeedTracker
+from core.preset_library import PresetLibrary
 
 
 # =============================================================================
@@ -60,6 +62,22 @@ class NoWheelComboBox(QComboBox):
         event.ignore()
 
 
+class EditableValueLabel(QLabel):
+    """The original value badge gains opt-in keyboard and double-click editing."""
+    def __init__(self, text, editor):
+        super().__init__(text)
+        self.editor = editor
+
+    def mouseDoubleClickEvent(self, event):
+        self.editor()
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
+            self.editor()
+        else:
+            super().keyPressEvent(event)
+
+
 # =============================================================================
 # 主设置控制面板
 # =============================================================================
@@ -68,11 +86,14 @@ class SettingsWindow(QWidget):
     request_reapply_topmost = pyqtSignal()
     request_toggle_overlay = pyqtSignal()
 
-    def __init__(self, config_manager: ConfigManager, mouse_tracker: MouseSpeedTracker, overlay_ref=None):
+    def __init__(self, config_manager: ConfigManager, mouse_tracker: MouseSpeedTracker, overlay_ref=None,
+                 library=None, extension_controller=None):
         super().__init__()
         self.cfg_mgr = config_manager
         self.mouse_tracker = mouse_tracker
         self.overlay_ref = overlay_ref
+        self.library = library or PresetLibrary(config_manager)
+        self.extension_controller = extension_controller
         self._loading = True
         self.save_timer = QTimer(self)
         self.save_timer.setSingleShot(True)
@@ -300,6 +321,9 @@ class SettingsWindow(QWidget):
         self.tabs.addTab(self._create_reference_columns_tab(), "固定细柱")
         self.tabs.addTab(self._create_reticle_tab(), "🎯 中心准星")
         self.tabs.addTab(self._create_system_tab(), "⚙️ 系统与屏幕")
+        from ui.optional_panel import OptionalPanel
+        self.optional_panel = OptionalPanel(self, self.library, self.extension_controller)
+        self.tabs.addTab(self.optional_panel, "可选扩展")
         root_layout.addWidget(self.tabs, stretch=1)
 
         # 5. 常驻底部遥测监控栏
@@ -450,6 +474,7 @@ class SettingsWindow(QWidget):
 
         status_row = QHBoxLayout()
         self.lbl_profile_status = QLabel()
+        self.lbl_profile_status.setTextFormat(Qt.TextFormat.PlainText)
         self.lbl_profile_status.setStyleSheet("color: #94A3B8; font-size: 11px;")
         status_row.addWidget(self.lbl_profile_status, 1)
         save_button = QPushButton("保存当前方案")
@@ -478,6 +503,7 @@ class SettingsWindow(QWidget):
         layout.setSpacing(8)
 
         lbl_text = QLabel("游戏请使用<b>无边框或窗口模式</b>；Ctrl+Alt+H 随时开启或暂停。")
+        self.lbl_shortcut_notice = lbl_text
         lbl_text.setWordWrap(True)
         lbl_text.setStyleSheet("color: #FDE047; font-size: 11px;")
         layout.addWidget(lbl_text, stretch=1)
@@ -837,6 +863,7 @@ class SettingsWindow(QWidget):
         key_row.addWidget(lbl_k)
 
         badge_key = QLabel("Ctrl + Alt + H")
+        self.badge_main_shortcut = badge_key
         badge_key.setStyleSheet("""
             background-color: #0369A1;
             color: #FFFFFF;
@@ -973,7 +1000,14 @@ class SettingsWindow(QWidget):
         row_layout.addWidget(slider, stretch=1)
 
         # 3. 紧凑数值 Badge
-        badge_val = QLabel(f"{default_val}{suffix}")
+        def edit_value():
+            if not self.cfg_mgr.config.accessibility_enabled:
+                return
+            value, ok = QInputDialog.getInt(self, title, f"输入数值（{suffix.strip() or '整数'}）", slider.value(), min_val, max_val)
+            if ok:
+                slider.setValue(value)
+        badge_val = EditableValueLabel(f"{default_val}{suffix}", edit_value)
+        badge_val.setToolTip("启用可选扩展中的界面辅助后，可双击或按 Enter 输入数值。")
         badge_val.setFixedWidth(104)
         badge_val.setAlignment(Qt.AlignmentFlag.AlignCenter)
         badge_val.setStyleSheet("""
@@ -1050,8 +1084,63 @@ class SettingsWindow(QWidget):
             self._refresh_targets()
             self.update_power_button_state(cfg.overlay_visible)
             self._update_profile_status("自动保存已开启")
+            if hasattr(self, "optional_panel"):
+                self.optional_panel.load()
+            self._apply_accessibility()
+            self._update_shortcut_labels()
         finally:
             self._loading = False
+
+    def _optional_changed(self):
+        self.save_timer.start()
+        self._update_profile_status("正在保存…")
+        self.cfg_mgr.notify_listeners()
+        self._apply_accessibility()
+        self._update_shortcut_labels()
+
+    def _update_shortcut_labels(self):
+        from core.hotkey_manager import valid_shortcut
+        from ui.optional_panel import OptionalPanel
+        cfg = self.cfg_mgr.config
+        keys = (cfg.controls_toggle_key, cfg.controls_comfort_key, cfg.controls_profile_key)
+        key = cfg.controls_toggle_key if cfg.controls_enabled and all(valid_shortcut(k) for k in keys) and len(set(keys)) == 3 else cfg.hotkey_toggle
+        display = OptionalPanel.display_shortcut(key)
+        self.badge_main_shortcut.setText(display)
+        self.lbl_shortcut_notice.setText(f"游戏请使用<b>无边框或窗口模式</b>；{display} 随时开启或暂停。")
+
+    def _apply_accessibility(self):
+        cfg = self.cfg_mgr.config
+        scale = cfg.font_scale / 100 if cfg.accessibility_enabled else 1.0
+        widgets = [self, *self.findChildren(QWidget)]
+        for widget in widgets:
+            current = widget.styleSheet()
+            if not hasattr(widget, "_care3d_base_style") or current != getattr(widget, "_care3d_scaled_style", None):
+                widget._care3d_base_style = current
+            base = widget._care3d_base_style
+            scaled = re.sub(r"font-size:\s*(\d+)px", lambda match: f"font-size: {round(int(match[1]) * scale)}px", base)
+            if current != scaled:
+                widget.setStyleSheet(scaled)
+            widget._care3d_scaled_style = scaled
+            if not hasattr(widget, "_care3d_dimensions"):
+                widget._care3d_dimensions = (widget.minimumWidth(), widget.maximumWidth(), widget.minimumHeight(), widget.maximumHeight())
+            mw, xw, mh, xh = widget._care3d_dimensions
+            # Enlarge fixed labels/badges as well as their fonts; preserve scrollable pages.
+            if mw == xw and 0 < mw < 1000:
+                widget.setFixedWidth(round(mw * scale))
+            if mh == xh and 0 < mh < 200:
+                widget.setFixedHeight(round(mh * scale))
+            if isinstance(widget, EditableValueLabel):
+                widget.setFocusPolicy(Qt.FocusPolicy.StrongFocus if cfg.accessibility_enabled else Qt.FocusPolicy.NoFocus)
+
+    def _scale_dynamic_style(self, widget):
+        # Called only after status code assigns a fresh, unscaled stylesheet.
+        scale = self.cfg_mgr.config.font_scale / 100 if self.cfg_mgr.config.accessibility_enabled else 1.0
+        base = widget.styleSheet()
+        scaled = re.sub(r"font-size:\s*(\d+)px", lambda match: f"font-size: {round(int(match[1]) * scale)}px", base)
+        widget._care3d_base_style = base
+        widget._care3d_scaled_style = scaled
+        if base != scaled:
+            widget.setStyleSheet(scaled)
 
     def _on_setting_changed(self):
         if self._loading:
@@ -1133,6 +1222,8 @@ class SettingsWindow(QWidget):
                 }
             """)
 
+        self._scale_dynamic_style(self.btn_main_power)
+
     def _apply_preset(self, name):
         # Live controls already updated the model, even if debounce hasn't fired.
         self.save_timer.stop()
@@ -1146,7 +1237,9 @@ class SettingsWindow(QWidget):
                    "light": self.btn_pre_light, "strong": self.btn_pre_heavy}
         for name, button in buttons.items():
             button.setText(("● " if name == active else "") + PROFILE_NAMES[name])
-        self.lbl_profile_status.setText(f"当前：{PROFILE_NAMES[active]} · {status}")
+        entry = self.library.entries.get(self.library.active_id)
+        prefix = entry["name"] + " / " if entry else ""
+        self.lbl_profile_status.setText(f"当前：{prefix}{PROFILE_NAMES[active]} · {status}")
         self.lbl_profile_status.setToolTip(f"各方案独立记忆，切换不重置参数。\n{self.cfg_mgr.config_path}")
 
     def _save_config(self):
@@ -1261,12 +1354,13 @@ class SettingsWindow(QWidget):
 
     def _on_reset_defaults_clicked(self):
         res = QMessageBox.question(
-            self, "重置所有方案与系统设置", "这会清空所有方案中的自定义参数，并重置系统设置。确定继续吗？",
+            self, "重置所有方案与系统设置", "将通用四套方案与系统设置恢复默认。游戏方案库和本地体验记录会保留，可在可选扩展中单独删除。确定继续吗？",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
         if res == QMessageBox.StandardButton.Yes:
-            self.cfg_mgr.reset_to_defaults()
+            if not self.cfg_mgr.reset_to_defaults():
+                QMessageBox.warning(self, "保存失败", "无法保存重置结果，请检查配置目录权限。")
             self._load_values_to_ui()
 
     def _update_telemetry(self):
@@ -1277,6 +1371,8 @@ class SettingsWindow(QWidget):
         self.lbl_input_source.setToolTip(f"配置文件：{self.cfg_mgr.config_path}")
         spd = self.mouse_tracker.smoothed_speed
         self.bar_speed.setValue(min(20000, max(0, int(spd))))
+        if self.tabs.currentWidget() is self.optional_panel:
+            self.optional_panel.refresh_runtime()
 
         if self.overlay_ref:
             self.lbl_sleep_status.setToolTip(self.overlay_ref.status_text)
@@ -1287,6 +1383,7 @@ class SettingsWindow(QWidget):
             else:
                 self.lbl_vignette_status.setText("暗角: 静止")
                 self.lbl_vignette_status.setStyleSheet("color: #717D96; font-size: 11px;")
+            self._scale_dynamic_style(self.lbl_vignette_status)
 
             if self.overlay_ref.is_sleeping:
                 self.lbl_sleep_status.setText("静止 · 暂停重绘" if self.overlay_ref.isVisible() else self.overlay_ref.status_text)

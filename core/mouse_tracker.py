@@ -18,6 +18,9 @@ class MouseSpeedTracker(QObject):
         self._is_running = False
         self._enabled = True
         self.input_source = "未启动"
+        self._calibrating = False
+        self._calibration_dist = 0.0
+        self._calibration_time = time.perf_counter()
         self.reset()
 
     def reset(self):
@@ -53,6 +56,7 @@ class MouseSpeedTracker(QObject):
 
     def stop(self):
         self._is_running = False
+        self.end_calibration()
         if self._raw_input:
             self._raw_input.stop()
             self._raw_input = None
@@ -67,7 +71,12 @@ class MouseSpeedTracker(QObject):
         self.reset()
 
     def add_delta(self, dx, dy):
-        if not self._is_running or not self._enabled or (dx == 0 and dy == 0):
+        if not self._is_running or (dx == 0 and dy == 0):
+            return
+        if self._calibrating:
+            with self._lock:
+                self._calibration_dist += math.hypot(dx, dy)
+        if not self._enabled:
             return
         wake = False
         with self._lock:
@@ -107,3 +116,22 @@ class MouseSpeedTracker(QObject):
     @property
     def smoothed_speed(self):
         return self._smoothed_speed
+
+    def begin_calibration(self):
+        with self._lock:
+            self._calibration_dist = 0.0
+            self._calibration_time = time.perf_counter()
+            self._calibrating = True
+
+    def calibration_sample(self):
+        now = time.perf_counter()
+        with self._lock:
+            speed = self._calibration_dist / max(0.001, now - self._calibration_time)
+            self._calibration_dist = 0.0
+            self._calibration_time = now
+        return speed
+
+    def end_calibration(self):
+        with self._lock:
+            self._calibrating = False
+            self._calibration_dist = 0.0

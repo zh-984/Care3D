@@ -35,6 +35,8 @@ jobs:
         run: python build.py
       - name: Check packaged startup and shutdown
         run: python tools/smoke_test_exe.py
+      - name: Check optional modules and large-font startup
+        run: python tools/smoke_test_exe.py --optional-features
       - name: Upload Windows executable
         if: always() && hashFiles('dist/Care3D_v2.exe') != ''
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
