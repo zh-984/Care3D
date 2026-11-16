@@ -34,7 +34,7 @@ def main():
         if args.optional_features:
             directory.mkdir()
             settings = dict(config_version=4, active_profile="balanced", font_scale=150,
-                            edge_triangles_enabled=True, reference_columns_enabled=True,
+                            edge_triangles_enabled=True, reference_columns_enabled=True, corner_markers_enabled=True,
                             safe_zones=[dict(x=.16, y=.78, w=.68, h=.18, label="Subtitle")])
             for key in ("game_library_enabled", "game_auto_switch_enabled", "safe_zones_enabled",
                         "comfort_enabled", "guide_enabled", "layout_enabled", "gamepad_enabled",

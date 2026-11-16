@@ -32,6 +32,8 @@ class OverlayPainter:
             self._paint_visual_anchors(painter, width, height, cfg)
         if cfg.edge_triangles_enabled:
             self._paint_edge_triangles(painter, width, height, cfg)
+        if cfg.corner_markers_enabled:
+            self._paint_corner_markers(painter, width, height, cfg)
         if cfg.layout_enabled and cfg.layout_style != "none":
             self._paint_layout_reference(painter, width, height, cfg)
         if cfg.center_dot_enabled:
@@ -199,6 +201,51 @@ class OverlayPainter:
             if side not in sides:
                 continue
             painter.drawPolygon(QPolygonF([QPointF(x, y) for x, y in vertices]))
+        painter.restore()
+
+    def _paint_corner_markers(self, painter, width, height, cfg):
+        """Independent static corner references; all geometry stays inside the surface."""
+        if width <= 0 or height <= 0 or cfg.corner_markers_alpha <= 0:
+            return
+        size = min(float(cfg.corner_markers_size), min(width, height) / 4.0)
+        margin = min(float(cfg.corner_markers_margin), max(0.0, (min(width, height) - 2 * size) / 2))
+        line = min(float(cfg.corner_markers_line_width), size / 3.0)
+        color = QColor(cfg.corner_markers_color)
+        color.setAlphaF(cfg.corner_markers_alpha)
+        corners = (("top_left", margin, margin),
+                   ("top_right", width - margin - size, margin),
+                   ("bottom_left", margin, height - margin - size),
+                   ("bottom_right", width - margin - size, height - margin - size))
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(color, line, Qt.PenStyle.SolidLine, Qt.PenCapStyle.SquareCap,
+                            Qt.PenJoinStyle.MiterJoin))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        for corner, x, y in corners:
+            if not getattr(cfg, "corner_markers_" + corner):
+                continue
+            outer = QRectF(x, y, size, size)
+            inset = line / math.sqrt(2) if cfg.corner_markers_style == "diamond" else line / 2
+            rect = outer.adjusted(inset, inset, -inset, -inset)
+            if cfg.corner_markers_style == "filled":
+                painter.fillRect(outer, color)
+            elif cfg.corner_markers_style == "diamond":
+                center = rect.center()
+                painter.drawPolygon(QPolygonF([QPointF(center.x(), rect.top()),
+                                              QPointF(rect.right(), center.y()),
+                                              QPointF(center.x(), rect.bottom()),
+                                              QPointF(rect.left(), center.y())]))
+            elif cfg.corner_markers_style == "brackets":
+                pivot = {"top_left": rect.topLeft(), "top_right": rect.topRight(),
+                         "bottom_left": rect.bottomLeft(), "bottom_right": rect.bottomRight()}[corner]
+                horizontal = QPointF(rect.right() if "left" in corner else rect.left(), pivot.y())
+                vertical = QPointF(pivot.x(), rect.bottom() if "top" in corner else rect.top())
+                path = QPainterPath(horizontal)
+                path.lineTo(pivot)
+                path.lineTo(vertical)
+                painter.drawPath(path)
+            else:
+                painter.drawRect(rect)
         painter.restore()
 
     def _paint_layout_reference(self, painter, width, height, cfg):

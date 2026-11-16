@@ -29,6 +29,17 @@ class AppConfig:
     edge_triangles_enabled: bool = False
     edge_triangles_size: int = 16
     edge_triangles_color: str = "#D9E2E5"
+    corner_markers_enabled: bool = False
+    corner_markers_style: str = "square"
+    corner_markers_size: int = 24
+    corner_markers_color: str = "#B8C8CC"
+    corner_markers_alpha: float = 0.35
+    corner_markers_margin: int = 20
+    corner_markers_line_width: int = 2
+    corner_markers_top_left: bool = True
+    corner_markers_top_right: bool = True
+    corner_markers_bottom_left: bool = True
+    corner_markers_bottom_right: bool = True
     reference_columns_enabled: bool = False
     reference_columns_width: int = 2
     reference_columns_height_ratio: float = 0.60
@@ -97,6 +108,8 @@ BOUNDS = {
     "anchor_idle_alpha": (0, 1), "anchor_boost_alpha": (0, 1),
     "anchor_margin_ratio": (0.01, 0.15), "vignette_max_alpha": (0, 0.95),
     "edge_triangles_size": (6, 64),
+    "corner_markers_size": (6, 120), "corner_markers_alpha": (0, 1),
+    "corner_markers_margin": (0, 240), "corner_markers_line_width": (1, 8),
     "reference_columns_width": (1, 12), "reference_columns_height_ratio": (0.10, 1.0),
     "reference_columns_alpha": (0.05, 0.80),
     "vignette_idle_alpha": (0, 0.40), "vignette_sensitivity": (200, 20000),
@@ -112,7 +125,7 @@ BOUNDS = {
 
 PROFILE_NAMES = {"custom": "我的设置", "balanced": "平衡遮挡", "light": "轻度遮挡", "strong": "加强遮挡"}
 PROFILE_KEYS = tuple(f.name for f in fields(AppConfig) if
-                     f.name.startswith(("vignette_", "anchor_", "anchors_", "center_dot_", "edge_triangles_", "reference_columns_", "safe_", "layout_", "comfort_")) or f.name == "mouse_gain")
+                     f.name.startswith(("vignette_", "anchor_", "anchors_", "center_dot_", "edge_triangles_", "corner_markers_", "reference_columns_", "safe_", "layout_", "comfort_")) or f.name == "mouse_gain")
 
 
 def profile_values(config):
@@ -183,7 +196,8 @@ def validated_config(data, include_profiles=True):
     positions = data.get("layout_column_positions")
     if isinstance(positions, list) and len(positions) == 4 and all(type(n) in (int, float) and math.isfinite(n) for n in positions):
         result.layout_column_positions = [max(0.015, min(0.985, n)) for n in positions]
-    for name, choices in (("layout_style", ("none", "frame", "horizon")), ("gamepad_stick", ("left", "right"))):
+    for name, choices in (("layout_style", ("none", "frame", "horizon")), ("gamepad_stick", ("left", "right")),
+                          ("corner_markers_style", ("square", "filled", "diamond", "brackets"))):
         if getattr(result, name) not in choices:
             setattr(result, name, getattr(AppConfig(), name))
     result.vignette_sensitivity = max(result.vignette_sensitivity, result.vignette_threshold + 100)

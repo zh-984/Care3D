@@ -703,6 +703,63 @@ class SettingsWindow(QWidget):
         triangle_color_row.addStretch()
         c_layout.addLayout(triangle_color_row)
 
+        self.chk_corner_markers = MarkedCheckBox("启用屏幕四角形状锚点")
+        self.chk_corner_markers.toggled.connect(self._on_setting_changed)
+        c_layout.addWidget(self.chk_corner_markers)
+        corner_hint = QLabel("四角各一个，位置和亮度固定，可独立于圆点开启；勾选后展开设置，随当前方案保存。")
+        corner_hint.setWordWrap(True)
+        corner_hint.setStyleSheet("color: #717D96; font-size: 11px;")
+        c_layout.addWidget(corner_hint)
+        self.corner_controls = QWidget()
+        corner_layout = QVBoxLayout(self.corner_controls)
+        corner_layout.setContentsMargins(0, 4, 0, 4)
+        corner_layout.setSpacing(6)
+        style_row = QHBoxLayout()
+        style_label = QLabel("四角锚点样式：")
+        style_label.setFixedWidth(135)
+        style_row.addWidget(style_label)
+        self.cmb_corner_style = NoWheelComboBox()
+        for label, value in (("空心正方形", "square"), ("实心正方形", "filled"),
+                             ("菱形", "diamond"), ("直角角标", "brackets")):
+            self.cmb_corner_style.addItem(label, value)
+        self.cmb_corner_style.currentIndexChanged.connect(self._on_setting_changed)
+        style_row.addWidget(self.cmb_corner_style, 1)
+        corner_layout.addLayout(style_row)
+        self.corner_checks = {}
+        corner_row = QHBoxLayout()
+        for label, key in (("左上", "top_left"), ("右上", "top_right"),
+                           ("左下", "bottom_left"), ("右下", "bottom_right")):
+            check = MarkedCheckBox(label)
+            check.toggled.connect(self._on_setting_changed)
+            self.corner_checks[key] = check
+            corner_row.addWidget(check)
+        corner_layout.addLayout(corner_row)
+        self.slider_corner_size, self.badge_corner_size = self._create_compact_slider_row(
+            corner_layout, "四角锚点大小", "每个形状的外框边长，随系统显示缩放。", 6, 120, 24, " px")
+        self.slider_corner_margin, self.badge_corner_margin = self._create_compact_slider_row(
+            corner_layout, "四角距屏幕边缘", "形状外边缘到覆盖区域边缘的距离。", 0, 240, 20, " px")
+        self.slider_corner_alpha, self.badge_corner_alpha = self._create_compact_slider_row(
+            corner_layout, "四角锚点可见度", "四角保持固定亮度，不随转向变化；0% 为完全透明。", 0, 100, 35, "%")
+        self.slider_corner_line_width, self.badge_corner_line_width = self._create_compact_slider_row(
+            corner_layout, "四角轮廓线宽", "用于空心方框、菱形和角标；实心正方形不使用轮廓线宽。", 1, 8, 2, " px")
+        corner_color_row = QHBoxLayout()
+        corner_color_label = QLabel("四角锚点颜色：")
+        corner_color_label.setFixedWidth(135)
+        corner_color_row.addWidget(corner_color_label)
+        self.btn_corner_color = QPushButton("选择颜色")
+        self.btn_corner_color.clicked.connect(self._pick_corner_color)
+        corner_color_row.addWidget(self.btn_corner_color)
+        self.corner_color_preview = QFrame()
+        self.corner_color_preview.setFixedSize(26, 18)
+        corner_color_row.addWidget(self.corner_color_preview)
+        corner_color_row.addStretch()
+        corner_layout.addLayout(corner_color_row)
+        from ui.extension_widgets import OverlayPreview
+        self.corner_preview = OverlayPreview(self.cfg_mgr.config)
+        self.corner_preview.setMinimumHeight(170)
+        corner_layout.addWidget(self.corner_preview)
+        c_layout.addWidget(self.corner_controls)
+
         layout.addWidget(card)
         layout.addStretch()
         scroll.setWidget(content)
@@ -1054,6 +1111,16 @@ class SettingsWindow(QWidget):
             self.chk_edge_triangles.setChecked(cfg.edge_triangles_enabled)
             self.slider_edge_triangles_size.setValue(cfg.edge_triangles_size)
             self._update_color_preview(self.edge_triangles_color_preview, cfg.edge_triangles_color)
+            self.chk_corner_markers.setChecked(cfg.corner_markers_enabled)
+            self.cmb_corner_style.setCurrentIndex(self.cmb_corner_style.findData(cfg.corner_markers_style))
+            for key, check in self.corner_checks.items():
+                check.setChecked(getattr(cfg, "corner_markers_" + key))
+            self.slider_corner_size.setValue(cfg.corner_markers_size)
+            self.slider_corner_margin.setValue(cfg.corner_markers_margin)
+            self.slider_corner_alpha.setValue(round(cfg.corner_markers_alpha * 100))
+            self.slider_corner_line_width.setValue(cfg.corner_markers_line_width)
+            self._update_color_preview(self.corner_color_preview, cfg.corner_markers_color)
+            self._update_corner_preview()
             self._update_color_preview(self.anc_color_preview, cfg.anchor_color)
             self.chk_reference_columns.setChecked(cfg.reference_columns_enabled)
             self.slider_reference_columns_width.setValue(cfg.reference_columns_width)
@@ -1170,6 +1237,15 @@ class SettingsWindow(QWidget):
         cfg.anchor_glow = self.chk_anc_glow.isChecked()
         cfg.edge_triangles_enabled = self.chk_edge_triangles.isChecked()
         cfg.edge_triangles_size = self.slider_edge_triangles_size.value()
+        cfg.corner_markers_enabled = self.chk_corner_markers.isChecked()
+        cfg.corner_markers_style = self.cmb_corner_style.currentData() or "square"
+        cfg.corner_markers_size = self.slider_corner_size.value()
+        cfg.corner_markers_margin = self.slider_corner_margin.value()
+        cfg.corner_markers_alpha = self.slider_corner_alpha.value() / 100.0
+        cfg.corner_markers_line_width = self.slider_corner_line_width.value()
+        for key, check in self.corner_checks.items():
+            setattr(cfg, "corner_markers_" + key, check.isChecked())
+        self._update_corner_preview()
         cfg.reference_columns_enabled = self.chk_reference_columns.isChecked()
         cfg.reference_columns_width = self.slider_reference_columns_width.value()
         cfg.reference_columns_height_ratio = self.slider_reference_columns_height.value() / 100.0
@@ -1324,6 +1400,21 @@ class SettingsWindow(QWidget):
             self.cfg_mgr.config.reference_columns_color = color.name()
             self._update_color_preview(self.reference_columns_color_preview, color.name())
             self._on_setting_changed()
+
+    def _pick_corner_color(self):
+        color = QColorDialog.getColor(QColor(self.cfg_mgr.config.corner_markers_color), self, "选择四角锚点颜色")
+        if color.isValid():
+            self.cfg_mgr.config.corner_markers_color = color.name()
+            self._update_color_preview(self.corner_color_preview, color.name())
+            self._on_setting_changed()
+
+    def _update_corner_preview(self):
+        import copy
+        cfg = copy.deepcopy(self.cfg_mgr.config)
+        cfg.vignette_enabled = cfg.anchors_enabled = cfg.edge_triangles_enabled = False
+        cfg.reference_columns_enabled = cfg.center_dot_enabled = cfg.layout_enabled = False
+        self.corner_preview.set_config(cfg)
+        self.corner_controls.setVisible(cfg.corner_markers_enabled)
 
     def _pick_center_color(self):
         curr = QColor(self.cfg_mgr.config.center_dot_color)
