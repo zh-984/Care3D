@@ -129,21 +129,32 @@ class SettingsWindow(QWidget):
                 border: none;
                 background-color: transparent;
             }
-            QScrollBar:vertical {
+            QScrollBar:vertical, QScrollBar:horizontal {
                 background: #141722;
+                border-radius: 3px;
+            }
+            QScrollBar:vertical {
                 width: 6px;
+            }
+            QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+                background: #6FAFC6;
                 border-radius: 3px;
             }
             QScrollBar::handle:vertical {
-                background: #2D3349;
                 min-height: 20px;
-                border-radius: 3px;
             }
-            QScrollBar::handle:vertical:hover {
-                background: #00E5FF;
+            QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
+                background: #67E8F9;
+            }
+            QScrollBar::handle:vertical:pressed, QScrollBar::handle:horizontal:pressed {
+                background: #00CDE5;
             }
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
                 height: 0px;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical,
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+                background: transparent;
             }
 
             /* --- 选项卡紧凑排布 --- */
