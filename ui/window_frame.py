@@ -17,7 +17,7 @@ _DWMWA_CAPTION_COLOR = 35
 _DWMWA_TEXT_COLOR = 36
 
 
-def apply_dark_titlebar(widget: QWidget) -> bool:
+def apply_light_titlebar(widget: QWidget) -> bool:
     """Color only this Qt window's native title bar, leaving its frame intact.
 
     Returns True when DWM accepts all requested attributes. Unsupported systems,
@@ -55,9 +55,9 @@ def apply_dark_titlebar(widget: QWidget) -> bool:
         # COLORREF stores RGB bytes as 0x00BBGGRR, rather than CSS #RRGGBB.
         # https://learn.microsoft.com/windows/win32/gdi/colorref
         attributes = (
-            (_DWMWA_USE_IMMERSIVE_DARK_MODE, wintypes.BOOL(True)),
-            (_DWMWA_CAPTION_COLOR, wintypes.DWORD(0x0022160E)),  # #0E1622
-            (_DWMWA_TEXT_COLOR, wintypes.DWORD(0x00EFE5DC)),  # #DCE5EF
+            (_DWMWA_USE_IMMERSIVE_DARK_MODE, wintypes.BOOL(False)),
+            (_DWMWA_CAPTION_COLOR, wintypes.DWORD(0x00FFFFFF)),  # #FFFFFF
+            (_DWMWA_TEXT_COLOR, wintypes.DWORD(0x00292524)),  # #242529
         )
         accepted = [
             set_attribute(hwnd, attribute, ctypes.byref(value), ctypes.sizeof(value)) == 0
