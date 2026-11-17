@@ -118,7 +118,7 @@ def _draw_icon(painter: QPainter, name: str, color: QColor) -> None:
             painter.drawRoundedRect(QRectF(x, 5, 3.5, 14), 1, 1)
 
 
-def icon(name: str, color: str = "#66717D", size: int = 18) -> QIcon:
+def icon(name: str, color: str = "#A0ADB7", size: int = 18) -> QIcon:
     """Return a consistent line icon, at 1x, 2x and 3x display resolution.
 
     Supported names: vignette, anchors, columns, reticle, settings, extensions,

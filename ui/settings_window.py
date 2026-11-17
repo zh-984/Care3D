@@ -15,9 +15,9 @@ from PyQt6.QtGui import QColor, QPainter, QPainterPath, QPen
 from core.config import ConfigManager, PROFILE_NAMES
 from core.mouse_tracker import MouseSpeedTracker
 from core.preset_library import PresetLibrary
-from ui.theme import STYLESHEET
+from ui.theme import STYLESHEET, apply_dark_palette
 from ui.product_icons import icon as product_icon, app_icon
-from ui.window_frame import apply_light_titlebar
+from ui.window_frame import apply_dark_titlebar
 
 
 
@@ -41,7 +41,7 @@ class MarkedCheckBox(QCheckBox):
         path.lineTo(rect.x() + rect.width() * 0.78, rect.y() + rect.height() * 0.29)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        color = QColor("#FFFFFF" if self.isEnabled() else "#F5F6F7")
+        color = QColor("#102820" if self.isEnabled() else "#A0ADA6")
         pen = QPen(color, 2.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
         painter.setPen(pen)
         painter.drawPath(path)
@@ -133,6 +133,7 @@ class SettingsWindow(QWidget):
 
     def _apply_compact_stylesheet(self):
         self.setObjectName("care3dSettings")
+        apply_dark_palette(self)
         self.setStyleSheet(STYLESHEET)
 
     def _init_ui(self):
@@ -312,13 +313,13 @@ class SettingsWindow(QWidget):
 
         desc = QLabel("常驻轻度暗角覆盖无鼠标输入的运动场景；转向时再平滑加深并收缩清晰区。")
         desc.setWordWrap(True)
-        desc.setStyleSheet("color: #6B727B; font-size: 11px; margin-bottom: 4px;")
+        desc.setStyleSheet("color: #A0A8B1; font-size: 11px; margin-bottom: 4px;")
         c_layout.addWidget(desc)
 
         # 分割微线
         sep = QFrame()
         sep.setFixedHeight(1)
-        sep.setStyleSheet("background-color: #DFE2E5;")
+        sep.setStyleSheet("background-color: #323941;")
         c_layout.addWidget(sep)
 
         # 紧凑单行参数列表 (紧挨着)
@@ -380,12 +381,12 @@ class SettingsWindow(QWidget):
 
         desc = QLabel("可选的固定视觉参照。保持低亮度，避免吸引注意；效果需要个人体验验证。")
         desc.setWordWrap(True)
-        desc.setStyleSheet("color: #6B727B; font-size: 11px; margin-bottom: 4px;")
+        desc.setStyleSheet("color: #A0A8B1; font-size: 11px; margin-bottom: 4px;")
         c_layout.addWidget(desc)
 
         sep = QFrame()
         sep.setFixedHeight(1)
-        sep.setStyleSheet("background-color: #DFE2E5;")
+        sep.setStyleSheet("background-color: #323941;")
         c_layout.addWidget(sep)
 
         # 紧凑参数
@@ -410,7 +411,7 @@ class SettingsWindow(QWidget):
         col_row.setContentsMargins(2, 4, 2, 2)
         lbl_c = QLabel("锚点颜色 & 外发光：")
         lbl_c.setFixedWidth(135)
-        lbl_c.setStyleSheet("font-size: 12px; font-weight: 500; color: #353B43;")
+        lbl_c.setStyleSheet("font-size: 12px; font-weight: 500; color: #CCD4DA;")
         col_row.addWidget(lbl_c)
 
         self.btn_anc_color = QPushButton("选色")
@@ -421,7 +422,7 @@ class SettingsWindow(QWidget):
 
         self.anc_color_preview = QFrame()
         self.anc_color_preview.setFixedSize(26, 18)
-        self.anc_color_preview.setStyleSheet("border-radius: 3px; border: 1px solid #BCC5CD;")
+        self.anc_color_preview.setStyleSheet("border-radius: 3px; border: 1px solid #66737D;")
         col_row.addWidget(self.anc_color_preview)
 
         col_row.addSpacing(16)
@@ -437,7 +438,7 @@ class SettingsWindow(QWidget):
         c_layout.addWidget(self.chk_edge_triangles)
         triangle_hint = QLabel("四边各一个，固定不动、不会随转向闪动；此选项随当前方案保存。")
         triangle_hint.setWordWrap(True)
-        triangle_hint.setStyleSheet("color: #6B727B; font-size: 11px;")
+        triangle_hint.setStyleSheet("color: #A0A8B1; font-size: 11px;")
         c_layout.addWidget(triangle_hint)
 
         self.slider_edge_triangles_size, self.badge_edge_triangles_size = self._create_compact_slider_row(
@@ -461,7 +462,7 @@ class SettingsWindow(QWidget):
         c_layout.addWidget(self.chk_corner_markers)
         corner_hint = QLabel("四角各一个，位置和亮度固定，可独立于圆点开启；勾选后展开设置，随当前方案保存。")
         corner_hint.setWordWrap(True)
-        corner_hint.setStyleSheet("color: #6B727B; font-size: 11px;")
+        corner_hint.setStyleSheet("color: #A0A8B1; font-size: 11px;")
         c_layout.addWidget(corner_hint)
         self.corner_controls = QWidget()
         corner_layout = QVBoxLayout(self.corner_controls)
@@ -534,7 +535,7 @@ class SettingsWindow(QWidget):
         controls.addWidget(self.chk_reference_columns)
         hint = QLabel("横向均分四个区域，每区中央一根细柱。位置和亮度固定，不随视角转动；默认较细、较淡。")
         hint.setWordWrap(True)
-        hint.setStyleSheet("color: #68737D; font-size: 11px;")
+        hint.setStyleSheet("color: #A8B1BA; font-size: 11px;")
         controls.addWidget(hint)
         self.slider_reference_columns_width, self.badge_reference_columns_width = self._create_compact_slider_row(
             controls, "柱子宽度", "四根柱子统一调整宽度；建议先从 1–3 像素开始，减少画面遮挡。",
@@ -557,7 +558,7 @@ class SettingsWindow(QWidget):
         controls.addLayout(color_row)
         saved_hint = QLabel("本页选项随当前方案保存。绑定游戏窗口时，四根细柱按游戏客户区均分。")
         saved_hint.setWordWrap(True)
-        saved_hint.setStyleSheet("color: #6B727B; font-size: 11px;")
+        saved_hint.setStyleSheet("color: #A0A8B1; font-size: 11px;")
         controls.addWidget(saved_hint)
         layout.addWidget(card)
         layout.addStretch()
@@ -584,12 +585,12 @@ class SettingsWindow(QWidget):
         c_layout.addWidget(self.chk_center_dot)
 
         desc = QLabel("可选中心参考点，默认关闭；游戏已有准星时通常无需叠加。")
-        desc.setStyleSheet("color: #6B727B; font-size: 11px; margin-bottom: 4px;")
+        desc.setStyleSheet("color: #A0A8B1; font-size: 11px; margin-bottom: 4px;")
         c_layout.addWidget(desc)
 
         sep = QFrame()
         sep.setFixedHeight(1)
-        sep.setStyleSheet("background-color: #DFE2E5;")
+        sep.setStyleSheet("background-color: #323941;")
         c_layout.addWidget(sep)
 
         # 样式与颜色行
@@ -597,7 +598,7 @@ class SettingsWindow(QWidget):
         style_row.setContentsMargins(2, 4, 2, 2)
         lbl_s = QLabel("准星样式 & 颜色：")
         lbl_s.setFixedWidth(135)
-        lbl_s.setStyleSheet("font-size: 12px; font-weight: 500; color: #353B43;")
+        lbl_s.setStyleSheet("font-size: 12px; font-weight: 500; color: #CCD4DA;")
         style_row.addWidget(lbl_s)
 
         self.cmb_center_style = NoWheelComboBox()
@@ -615,7 +616,7 @@ class SettingsWindow(QWidget):
 
         self.center_color_preview = QFrame()
         self.center_color_preview.setFixedSize(26, 18)
-        self.center_color_preview.setStyleSheet("border-radius: 3px; border: 1px solid #BCC5CD;")
+        self.center_color_preview.setStyleSheet("border-radius: 3px; border: 1px solid #66737D;")
         style_row.addWidget(self.center_color_preview)
         style_row.addStretch()
         c_layout.addLayout(style_row)
@@ -651,7 +652,7 @@ class SettingsWindow(QWidget):
         scr_row = QHBoxLayout()
         lbl_scr = QLabel("覆盖层作用屏幕：")
         lbl_scr.setFixedWidth(135)
-        lbl_scr.setStyleSheet("font-size: 12px; font-weight: 500; color: #353B43;")
+        lbl_scr.setStyleSheet("font-size: 12px; font-weight: 500; color: #CCD4DA;")
         scr_row.addWidget(lbl_scr)
 
         self.cmb_screen = NoWheelComboBox()
@@ -670,7 +671,7 @@ class SettingsWindow(QWidget):
         key_row = QHBoxLayout()
         lbl_k = QLabel("游戏内全局快捷键：")
         lbl_k.setFixedWidth(135)
-        lbl_k.setStyleSheet("font-size: 12px; font-weight: 500; color: #353B43;")
+        lbl_k.setStyleSheet("font-size: 12px; font-weight: 500; color: #CCD4DA;")
         key_row.addWidget(lbl_k)
 
         badge_key = QLabel("Ctrl + Alt + H")
@@ -710,7 +711,7 @@ class SettingsWindow(QWidget):
         # 安全声明
         sep = QFrame()
         sep.setFixedHeight(1)
-        sep.setStyleSheet("background-color: #DFE2E5;")
+        sep.setStyleSheet("background-color: #323941;")
         c_layout.addWidget(sep)
 
         sec_desc = QLabel(
@@ -719,7 +720,7 @@ class SettingsWindow(QWidget):
             "• 本工具尝试减少视觉刺激，不保证缓解症状；出现恶心或头晕应停止游戏并休息。"
         )
         sec_desc.setWordWrap(True)
-        sec_desc.setStyleSheet("color: #707780; font-size: 11px; line-height: 1.5;")
+        sec_desc.setStyleSheet("color: #A0A8B1; font-size: 11px; line-height: 1.5;")
         c_layout.addWidget(sec_desc)
 
         btn_reset = QPushButton("重置所有方案与系统设置")
@@ -753,13 +754,13 @@ class SettingsWindow(QWidget):
         layout.addWidget(self.bar_speed)
 
         self.lbl_vignette_status = QLabel("暗角：静止")
-        self.lbl_vignette_status.setStyleSheet("color: #6B727B; font-size: 11px;")
+        self.lbl_vignette_status.setStyleSheet("color: #A0A8B1; font-size: 11px;")
         layout.addWidget(self.lbl_vignette_status)
 
         layout.addStretch()
 
         self.lbl_sleep_status = QLabel("等待渲染状态")
-        self.lbl_sleep_status.setStyleSheet("color: #327353; font-weight: bold; font-size: 11px;")
+        self.lbl_sleep_status.setStyleSheet("color: #9CC8B3; font-weight: bold; font-size: 11px;")
         layout.addWidget(self.lbl_sleep_status)
 
         return footer
@@ -784,7 +785,7 @@ class SettingsWindow(QWidget):
         # 1. 标题
         lbl_title = QLabel(title)
         lbl_title.setFixedWidth(135)
-        lbl_title.setStyleSheet("font-size: 12px; font-weight: 500; color: #353B43;")
+        lbl_title.setStyleSheet("font-size: 12px; font-weight: 500; color: #CCD4DA;")
         if tooltip:
             lbl_title.setToolTip(tooltip)
         row_layout.addWidget(lbl_title)
@@ -998,7 +999,7 @@ class SettingsWindow(QWidget):
     def update_power_button_state(self, is_visible: bool):
         self.btn_main_power.setText("已开启 · 点击暂停" if is_visible else "已暂停 · 点击开启")
         self.btn_main_power.setProperty("state", "running" if is_visible else "paused")
-        self.btn_main_power.setIcon(product_icon("pause" if is_visible else "play", "#286343" if is_visible else "#535B64"))
+        self.btn_main_power.setIcon(product_icon("pause" if is_visible else "play", "#9DD7BC" if is_visible else "#B8C2CA"))
         self.btn_main_power.style().unpolish(self.btn_main_power)
         self.btn_main_power.style().polish(self.btn_main_power)
         self.btn_main_power.setStyleSheet("font-size: 12px; font-weight: 600;")
@@ -1074,7 +1075,7 @@ class SettingsWindow(QWidget):
 
     def showEvent(self, event):
         super().showEvent(event)
-        apply_light_titlebar(self)
+        apply_dark_titlebar(self)
         self.telemetry_timer.start()
         self._update_telemetry()
 
@@ -1132,7 +1133,7 @@ class SettingsWindow(QWidget):
             self._on_setting_changed()
 
     def _update_color_preview(self, frame: QFrame, hex_color: str):
-        frame.setStyleSheet(f"background-color: {hex_color}; border-radius: 3px; border: 1px solid #BCC5CD;")
+        frame.setStyleSheet(f"background-color: {hex_color}; border-radius: 3px; border: 1px solid #66737D;")
 
     def _on_screen_selected(self, index: int):
         if self._loading:
@@ -1176,18 +1177,18 @@ class SettingsWindow(QWidget):
             alpha = self.overlay_ref.current_vignette_alpha
             if alpha > 0.005:
                 self.lbl_vignette_status.setText(f"暗角: {int(alpha * 100)}%")
-                self.lbl_vignette_status.setStyleSheet("color: #405D67; font-weight: bold; font-size: 11px;")
+                self.lbl_vignette_status.setStyleSheet("color: #A4CDBC; font-weight: bold; font-size: 11px;")
             else:
                 self.lbl_vignette_status.setText("暗角: 静止")
-                self.lbl_vignette_status.setStyleSheet("color: #6B727B; font-size: 11px;")
+                self.lbl_vignette_status.setStyleSheet("color: #A0A8B1; font-size: 11px;")
             self._scale_dynamic_style(self.lbl_vignette_status)
 
             if self.overlay_ref.is_sleeping:
                 self.lbl_sleep_status.setText("静止 · 暂停重绘" if self.overlay_ref.isVisible() else self.overlay_ref.status_text)
-                self.lbl_sleep_status.setStyleSheet("color: #327353; font-weight: bold; font-size: 11px;")
+                self.lbl_sleep_status.setStyleSheet("color: #9CC8B3; font-weight: bold; font-size: 11px;")
             else:
                 self.lbl_sleep_status.setText(f"动态 · 上限 {self.cfg_mgr.config.fps_limit} FPS")
-                self.lbl_sleep_status.setStyleSheet("color: #526875; font-weight: bold; font-size: 11px;")
+                self.lbl_sleep_status.setStyleSheet("color: #A9BAB3; font-weight: bold; font-size: 11px;")
 
     def closeEvent(self, event):
         self._save_config()
