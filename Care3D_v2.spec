@@ -30,6 +30,7 @@ exe = EXE(
     a.datas,
     [],
     name='Care3D_v2',
+    icon='assets/care3d.ico',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

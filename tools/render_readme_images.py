@@ -20,6 +20,7 @@ from core.config import ConfigManager
 from core.mouse_tracker import MouseSpeedTracker
 from ui.overlay_window import MotionSicknessOverlay
 from ui.settings_window import SettingsWindow
+from ui.product_icons import logo_pixmap
 
 
 def main():
@@ -31,6 +32,8 @@ def main():
             QFontDatabase.addApplicationFont(str(path))
     output = ROOT / "docs" / "images"
     output.mkdir(parents=True, exist_ok=True)
+    if not logo_pixmap(256).save(str(output / "app-icon.png")):
+        raise RuntimeError("Could not write app icon preview")
 
     with tempfile.TemporaryDirectory(prefix="care3d-docs-") as temporary:
         manager = ConfigManager(temporary)

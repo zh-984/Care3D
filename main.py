@@ -19,6 +19,7 @@ from core.extensions import ExtensionController
 from ui.overlay_window import MotionSicknessOverlay
 from ui.settings_window import SettingsWindow
 from ui.tray_icon import TrayIconManager
+from ui.product_icons import app_icon
 
 
 class AppBridge(QObject):
@@ -54,7 +55,8 @@ def main():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)  # 保持托盘常驻，关闭设置面板时不退出
     app.setApplicationName("Care3D")
-    app.setApplicationDisplayName("Care3D 防晕动视野辅助")
+    app.setApplicationDisplayName("Care3D · 游戏视觉舒适辅助")
+    app.setWindowIcon(app_icon())
 
     # 3. 初始化配置与核心监听组件
     config_mgr = ConfigManager()

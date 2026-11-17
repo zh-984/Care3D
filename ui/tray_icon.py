@@ -4,8 +4,10 @@
 """
 
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
-from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush, QPen
+from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt, pyqtSignal, QObject
+from ui.product_icons import app_icon, icon as product_icon
+from ui.theme import STYLESHEET
 
 
 class TrayIconManager(QObject):
@@ -22,81 +24,35 @@ class TrayIconManager(QObject):
         self.tray = QSystemTrayIcon(parent)
         self.icon = self._generate_tray_icon()
         self.tray.setIcon(self.icon)
-        self.tray.setToolTip("Care3D - 3D 晕动症缓解辅助系统 (运行中)")
+        self.tray.setToolTip("Care3D · 游戏视觉舒适辅助")
 
         self._init_menu()
         self.tray.activated.connect(self._on_tray_activated)
 
     def _generate_tray_icon(self) -> QIcon:
-        """
-        动态绘制高清防晕视网膜罗盘图标 (无需依赖外置静态资源图片，打包 100% 稳妥)
-        """
-        size = 64
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.GlobalColor.transparent)
-
-        painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-
-        # 1. 外部科技暗黑圆形底板
-        painter.setBrush(QBrush(QColor("#16171D")))
-        painter.setPen(QPen(QColor("#00E5FF"), 3))
-        painter.drawEllipse(4, 4, size - 8, size - 8)
-
-        # 2. 内圈防晕护眼罗盘环
-        painter.setPen(QPen(QColor("#38BDF8"), 2, Qt.PenStyle.DashLine))
-        painter.drawEllipse(14, 14, size - 28, size - 28)
-
-        # 3. 中心防晕聚焦点 (亮红色)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QBrush(QColor("#FF5252")))
-        painter.drawEllipse(26, 26, 12, 12)
-
-        painter.end()
-        return QIcon(pixmap)
+        return app_icon()
 
     def _init_menu(self):
         """初始化托盘右键菜单"""
         menu = QMenu()
-        menu.setStyleSheet("""
-            QMenu {
-                background-color: #1E202B;
-                color: #F8FAFC;
-                border: 1px solid #334155;
-                border-radius: 6px;
-                padding: 4px;
-            }
-            QMenu::item {
-                padding: 6px 24px;
-                border-radius: 4px;
-            }
-            QMenu::item:selected {
-                background-color: #2563EB;
-                color: #FFFFFF;
-            }
-            QMenu::separator {
-                height: 1px;
-                background: #334155;
-                margin: 4px 8px;
-            }
-        """)
+        menu.setStyleSheet(STYLESHEET)
 
         # 控制面板
-        act_settings = menu.addAction("🛠️ 打开控制面板")
+        act_settings = menu.addAction(product_icon("settings"), "打开控制面板")
         act_settings.triggered.connect(self.action_show_settings.emit)
 
         # 覆盖层显隐切换
-        act_toggle = menu.addAction("👁️ 切换覆盖层 (Ctrl+Alt+H)")
+        act_toggle = menu.addAction(product_icon("play"), "开启 / 暂停辅助")
         act_toggle.triggered.connect(self.action_toggle_overlay.emit)
 
         # 重新置顶
-        act_retop = menu.addAction("📌 重新置顶悬浮窗")
+        act_retop = menu.addAction(product_icon("retop"), "重新置顶悬浮窗")
         act_retop.triggered.connect(self.action_retop_overlay.emit)
 
         menu.addSeparator()
 
         # 退出
-        act_exit = menu.addAction("❌ 退出 Care3D")
+        act_exit = menu.addAction("退出 Care3D")
         act_exit.triggered.connect(self.action_exit.emit)
 
         self.tray.setContextMenu(menu)
@@ -109,7 +65,7 @@ class TrayIconManager(QObject):
         if self.tray.supportsMessages():
             self.tray.showMessage(
                 "Care3D 已就绪",
-                "抗晕动辅助已在后台守护。\n快捷键: Ctrl + Alt + H 可随时切换显示/隐藏。",
+                "视觉舒适辅助已启动。\n可从托盘打开控制面板或暂停辅助。",
                 QSystemTrayIcon.MessageIcon.Information,
                 3000
             )

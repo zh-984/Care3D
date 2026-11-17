@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/images/app-icon.png" alt="Care3D 图标" width="72">
+
 # Care3D
 
 **给游戏画面增加一层可调的视觉参照，尝试让 3D 游戏更舒适。**
@@ -22,6 +24,8 @@ Care3D 主要面向在 Steam 等平台游玩 3D 游戏时容易感到不适的�
 ## 界面预览
 
 ![Care3D 控制面板](docs/images/settings.png)
+
+v2.3 使用统一的深色主题、原生矢量图标和清晰的控件状态。顶栏、方案栏、提示条、页签内容及底部状态栏保持原有布局；主参数行的位置与尺寸保留。Windows 11 可显示原生深色标题栏，其他系统保留标准窗口边框。
 
 <details>
 <summary>查看暗角与固定参照效果示意</summary>

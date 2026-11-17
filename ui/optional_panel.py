@@ -30,7 +30,6 @@ class OptionalPanel(QWidget):
         row = QHBoxLayout()
         self.navigation = QListWidget()
         self.navigation.setFixedWidth(108)
-        self.navigation.setStyleSheet("QListWidget::item { padding: 4px 2px; } QListWidget::item:selected { background: #0369A1; color: white; }")
         self.stack = QStackedWidget()
         row.addWidget(self.navigation)
         row.addWidget(self.stack, 1)
